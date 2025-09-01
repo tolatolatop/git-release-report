@@ -15,20 +15,39 @@ con = Console()
 
 
 @click.command()
-@click.option('--repo', required=True)
-@click.option('--old', required=True)
-@click.option('--new', required=True)
-@click.option('--preset', default='all')
-@click.option('--include', multiple=True)
-@click.option('--exclude', multiple=True)
-@click.option('--ignore-ws/--no-ignore-ws', default=True)
-@click.option('--rename', default=90, type=int)
-@click.option('--copy', default=80, type=int)
-@click.option('--first-parent/--no-first-parent', default=False)
-@click.option('--mailmap', default=None)
-@click.option('--bot-filter', default=None)
-@click.option('--out', 'out_dir', default='out')
+@click.option('--repo', required=True, help='Git 仓库路径')
+@click.option('--old', required=True, help='旧版本引用 (如: v1.2.0, HEAD~10)')
+@click.option('--new', required=True, help='新版本引用 (如: v1.3.0, HEAD)')
+@click.option('--preset', default='all', help='分析预设: all|A|B|C|D|E|F')
+@click.option('--include', multiple=True, help='包含的路径模式 (可多次指定)')
+@click.option('--exclude', multiple=True, help='排除的路径模式 (可多次指定)')
+@click.option('--ignore-ws/--no-ignore-ws', default=True, help='忽略空白字符差异')
+@click.option('--rename', default=90, type=int, help='重命名检测阈值 (百分比)')
+@click.option('--copy', default=80, type=int, help='复制检测阈值 (百分比)')
+@click.option('--first-parent/--no-first-parent', default=False, help='仅跟踪主线提交')
+@click.option('--mailmap', default=None, help='邮件映射文件路径')
+@click.option('--bot-filter', default=None, help='机器人过滤正则表达式')
+@click.option('--out', 'out_dir', default='out', help='输出目录')
 def main(**kwargs):
+    """
+    Git 发布报告生成工具
+
+    分析两个 Git 版本之间的差异，生成详细的发布报告，包括：
+    - 文件变更统计
+    - 贡献者分析 (基于提交和 blame)
+    - 代码存活率分析
+    - 合并提交分析
+    - 重命名/复制/删除文件跟踪
+
+    输出文件：
+    - analysis.json: 完整的结构化数据
+    - summary.md: 人类可读的发布报告
+    - 各种 CSV 文件: 详细的统计数据
+
+    示例：
+        release-report --repo . --old v1.2.0 --new v1.3.0 --out ./reports
+        release-report --repo /path/to/repo --old HEAD~50 --new HEAD --include "src/" --exclude "test/"
+    """
     opts = CLIOptions(**kwargs)
     g = GitWrap(opts.repo)
 
