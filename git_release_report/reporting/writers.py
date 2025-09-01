@@ -7,7 +7,7 @@ from ..models import AnalysisResult
 def write_json(result: AnalysisResult, out_dir: str):
     p = Path(out_dir)/"analysis.json"
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_bytes(json.dumps(result, default=lambda o: o.__dict__).encode())
+    p.write_bytes(json.dumps(result, default=lambda o: o.__dict__))
 
 
 def write_csv(rows, headers, path: str):
