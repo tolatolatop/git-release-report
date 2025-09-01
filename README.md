@@ -37,6 +37,7 @@ release-report \
 工具会在 `/out` 文件夹中生成：
 
 - `analysis.json` - 完整的结构化数据
+- `commits_survival.json` - 按提交顺序排序的代码存活率报告
 - `summary.md` - 人类可读的发布报告
 - CSV 文件：
   - 贡献者（基于提交）

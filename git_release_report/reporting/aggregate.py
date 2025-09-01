@@ -1,7 +1,7 @@
 from __future__ import annotations
 from collections import defaultdict
 from typing import Dict, List
-from .writers import write_csv, write_json, write_md
+from .writers import write_csv, write_json, write_md, write_commits_survival_json
 from ..models import AnalysisResult, BlameAtom
 
 
@@ -23,6 +23,7 @@ def aggregate_contributors_blame(line_blames: List, ignore_bots):
 
 def emit_all(result: AnalysisResult, out_dir: str):
     write_json(result, out_dir)
+    write_commits_survival_json(result, out_dir)
     # CSV examples
     # ... more writers below
     write_md(result, out_dir)
