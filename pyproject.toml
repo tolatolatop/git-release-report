@@ -1,0 +1,10 @@
+[project]
+name = "git-release-report"
+version = "0.1.0"
+description = "Precision release diff & contributor analytics"
+authors = [{name="Your Team"}]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+release-report = "git_release_report.cli:main"
