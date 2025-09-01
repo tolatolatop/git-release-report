@@ -91,8 +91,9 @@ def main(**kwargs):
 
     # 4) survival stats (commit/author level)
     paths = collect_paths_from_file_changes(file_changes)
+    debug_log_file = f"{opts.out}/survival_debug.log"
     by_commit, by_author = compute_survival(
-        g, opts.old, opts.new, paths, opts.ignore_ws)
+        g, opts.old, opts.new, paths, opts.ignore_ws, debug_log_file)
 
     # 5) merges (list only v0.1)
     merges = list_merges(commits)
