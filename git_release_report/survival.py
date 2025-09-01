@@ -40,8 +40,18 @@ def compute_survival(g: GitWrap, old: str, new: str, paths: list[str], ignore_ws
     def debug_log_write(msg: str):
         """写入调试日志"""
         if debug_log:
-            debug_log.write(msg + '\n')
-            debug_log.flush()
+            try:
+                # 处理编码问题，替换无法编码的字符
+                safe_msg = msg.encode(
+                    'utf-8', errors='replace').decode('utf-8')
+                debug_log.write(safe_msg + '\n')
+                debug_log.flush()
+            except Exception as e:
+                # 如果还是有问题，使用 ASCII 安全模式
+                safe_msg = msg.encode(
+                    'ascii', errors='replace').decode('ascii')
+                debug_log.write(f"[编码错误] {safe_msg}\n")
+                debug_log.flush()
 
     con.log(f"[yellow]开始计算存活率统计: {old} → {new}[/yellow]")
     con.log(f"[blue]分析文件数量: {len(paths)}[/blue]")
