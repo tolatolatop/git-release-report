@@ -1,5 +1,6 @@
 from __future__ import annotations
 import click
+import time
 from rich.console import Console
 from .options import CLIOptions
 from .gitwrap import GitWrap
@@ -48,6 +49,7 @@ def main(**kwargs):
         release-report --repo . --old v1.2.0 --new v1.3.0 --out ./reports
         release-report --repo /path/to/repo --old HEAD~50 --new HEAD --include "src/" --exclude "test/"
     """
+    start_time = time.time()
     opts = CLIOptions(**kwargs)
     g = GitWrap(opts.repo)
 
@@ -107,7 +109,10 @@ def main(**kwargs):
 
     # 6) emit
     emit_all(result, opts.out)
-    con.log(f"[green]Done[/] → {opts.out}")
+
+    # 计算并显示耗时
+    elapsed_time = time.time() - start_time
+    con.log(f"[green]Done[/] → {opts.out} (耗时: {elapsed_time:.2f} 秒)")
 
 
 if __name__ == '__main__':
