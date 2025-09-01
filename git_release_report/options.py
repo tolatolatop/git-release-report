@@ -11,7 +11,7 @@ class CLIOptions(BaseModel):
     exclude: List[str] = []
     ignore_ws: bool = True
     rename: int = 90
-    copy: int = 80
+    copy_thresh: int = Field(80, alias="copy")
     first_parent: bool = False
     mailmap: Optional[str] = None
     bot_filter: Optional[str] = None

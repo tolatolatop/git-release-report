@@ -53,7 +53,7 @@ def main(**kwargs):
 
     # 2) diff scan
     raw = g.diff_raw(opts.old, opts.new, opts.ignore_ws, opts.rename,
-                     opts.copy, list(opts.include), list(opts.exclude))
+                     opts.copy_thresh, list(opts.include), list(opts.exclude))
     file_changes = parse_diff(raw)
 
     # 3) blame per hunk (final ownership of changed lines)
