@@ -8,6 +8,8 @@ dependencies = ["sqlalchemy (>=2.0.43,<3.0.0)"]
 
 [project.scripts]
 release-report = "git_release_report.cli:main"
+repo-blame = "git_release_report.gitblamedb.cli_loader:main"
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"
 

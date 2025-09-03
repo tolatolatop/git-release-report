@@ -8,7 +8,9 @@ import argparse
 import sys
 import os
 from pathlib import Path
+from sqlalchemy import func
 
+from .models import get_db_session, Repository, Commit, File, BlameLine
 from .loader import GitBlameLoader, load_git_blame_database
 from .models import init_database
 
@@ -143,8 +145,6 @@ def main():
 
             # 显示统计信息
             try:
-                from .models import get_db_session, Repository, Commit, File, BlameLine
-                from sqlalchemy import func
 
                 session = get_db_session()
                 try:
