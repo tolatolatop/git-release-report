@@ -8,3 +8,6 @@ dependencies = []
 
 [project.scripts]
 release-report = "git_release_report.cli:main"
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.1"
+
