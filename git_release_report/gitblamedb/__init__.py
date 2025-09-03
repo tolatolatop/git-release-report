@@ -15,6 +15,12 @@ from .models import (
     close_database,
 )
 
+from .loader import (
+    GitBlameLoader,
+    load_git_blame_database,
+    BlameResult,
+)
+
 __all__ = [
     'Base',
     'Repository',
@@ -26,4 +32,7 @@ __all__ = [
     'get_db_session',
     'init_database',
     'close_database',
+    'GitBlameLoader',
+    'load_git_blame_database',
+    'BlameResult',
 ]

@@ -184,9 +184,93 @@ db_manager.close()
 - SQLAlchemy >= 2.0.0
 - Python >= 3.10
 
+## Git Blame Loader
+
+### 快速加载器
+
+`GitBlameLoader` 类提供了快速初始化git blame数据库的功能：
+
+```python
+from git_release_report.gitblamedb import GitBlameLoader, load_git_blame_database
+
+# 使用便捷函数
+success = load_git_blame_database(
+    repo_path="/path/to/your/repo",
+    database_url="sqlite:///git_blame.db",
+    file_filter_regex=r"\.(py|js|ts)$",  # 只分析代码文件
+    repo_name="my-project",
+    repo_url="https://github.com/user/repo.git"
+)
+
+# 或使用类实例
+loader = GitBlameLoader("sqlite:///git_blame.db", batch_size=1000)
+try:
+    success = loader.load_repository(
+        repo_path="/path/to/your/repo",
+        file_filter_regex=r"\.(py|js|ts)$"
+    )
+finally:
+    loader.close()
+```
+
+### 命令行工具
+
+使用CLI工具快速加载：
+
+```bash
+# 基本使用
+python -m git_release_report.gitblamedb.cli_loader /path/to/repo
+
+# 指定过滤条件和数据库
+python -m git_release_report.gitblamedb.cli_loader /path/to/repo \
+  --database sqlite:///my_blame.db \
+  --filter "\.(py|js)$" \
+  --name "my-project" \
+  --verbose
+```
+
+### 文件过滤
+
+支持使用正则表达式过滤文件：
+
+- `r"\.py$"` - 只分析Python文件
+- `r"\.(js|ts|tsx)$"` - 只分析前端文件
+- `r"^src/.*\.py$"` - 只分析src目录下的Python文件
+- `r"^(?!.*test).*\.py$"` - 排除测试文件
+
+### 增量加载
+
+Loader支持智能的增量加载功能，可以显著提高重复加载的性能：
+
+```python
+# 增量加载（默认模式）
+success = load_git_blame_database(
+    repo_path="/path/to/repo",
+    database_url="sqlite:///git_blame.db",
+    force_reload=False  # 跳过未修改的文件
+)
+
+# 强制重新加载所有文件
+success = load_git_blame_database(
+    repo_path="/path/to/repo", 
+    database_url="sqlite:///git_blame.db",
+    force_reload=True  # 重新处理所有文件
+)
+```
+
+**增量加载特性：**
+- 🚀 **性能优化**: 自动跳过未修改的文件，大幅减少处理时间
+- 🔄 **智能检测**: 基于文件修改时间自动判断是否需要重新处理
+- 🗑️ **自动清理**: 自动清理已删除文件的记录
+- 📊 **统计信息**: 提供详细的处理统计和性能指标
+
 ## 示例代码
 
-查看 `example_usage.py` 文件获取完整的使用示例。
+查看以下文件获取完整的使用示例：
+- `example_usage.py` - 基本模型使用示例
+- `loader_example.py` - Loader使用示例
+- `incremental_loading_example.py` - 增量加载示例
+- `cli_loader.py` - 命令行工具
 
 ## 注意事项
 
