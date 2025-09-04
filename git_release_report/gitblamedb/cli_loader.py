@@ -40,6 +40,11 @@ def main():
   python -m git_release_report.gitblamedb.cli_loader /path/to/repo \\
     --force-reload \\
     --verbose
+
+  # 指定错误日志文件
+  python -m git_release_report.gitblamedb.cli_loader /path/to/repo \\
+    --log-file "custom-errors.log" \\
+    --verbose
         """
     )
 
@@ -94,6 +99,12 @@ def main():
         help='强制重新加载所有文件，忽略修改时间检查'
     )
 
+    parser.add_argument(
+        '--log-file',
+        default='analyze-failed.log',
+        help='错误日志文件路径 (默认: analyze-failed.log)'
+    )
+
     args = parser.parse_args()
 
     # 验证仓库路径
@@ -127,6 +138,7 @@ def main():
     print(f"📦 批量大小: {args.batch_size}")
     if args.force_reload:
         print("🔄 强制重新加载: 是")
+    print(f"📝 错误日志文件: {args.log_file}")
     print("-" * 50)
 
     try:
@@ -137,7 +149,8 @@ def main():
             file_filter_regex=args.filter,
             repo_name=args.name,
             repo_url=args.url,
-            force_reload=args.force_reload
+            force_reload=args.force_reload,
+            log_file=args.log_file
         )
 
         if success:

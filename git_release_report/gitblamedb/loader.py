@@ -37,16 +37,18 @@ class BlameResult:
 class GitBlameLoader:
     """Git Blame数据库加载器"""
 
-    def __init__(self, database_url: str, batch_size: int = 1000):
+    def __init__(self, database_url: str, batch_size: int = 1000, log_file: str = "analyze-failed.log"):
         """
         初始化加载器
 
         Args:
             database_url: 数据库连接URL
             batch_size: 批量插入大小
+            log_file: 错误日志文件路径
         """
         self.database_url = database_url
         self.batch_size = batch_size
+        self.log_file = log_file
         self.db_manager = DatabaseManager(database_url)
         self.logger = self._setup_logger()
 
@@ -56,14 +58,80 @@ class GitBlameLoader:
         logger.setLevel(logging.INFO)
 
         if not logger.handlers:
-            handler = logging.StreamHandler()
-            formatter = logging.Formatter(
+            # 控制台处理器 - 只显示INFO和WARNING级别
+            console_handler = logging.StreamHandler()
+            console_formatter = logging.Formatter(
                 '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
             )
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
+            console_handler.setFormatter(console_formatter)
+            console_handler.setLevel(logging.INFO)  # 控制台只显示INFO及以上级别
+            logger.addHandler(console_handler)
+
+            # 分析失败文件处理器 - 只记录ERROR级别到文件
+            file_handler = logging.FileHandler(self.log_file, encoding='utf-8')
+            file_formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            )
+            file_handler.setFormatter(file_formatter)
+            file_handler.setLevel(logging.ERROR)  # 只记录错误级别到文件
+            logger.addHandler(file_handler)
 
         return logger
+
+    def _log_analysis_error(self, file_path: str, error: Exception, context: str = ""):
+        """
+        记录分析错误的详细信息到日志文件
+
+        Args:
+            file_path: 文件路径
+            error: 异常对象
+            context: 错误上下文信息
+        """
+        import traceback
+
+        # 在控制台显示简化的错误信息
+        simple_error_msg = f"分析失败 {file_path}: {str(error)}"
+        self.logger.warning(simple_error_msg)
+
+        # 详细信息只写入文件
+        error_details = {
+            'file_path': file_path,
+            'error_type': type(error).__name__,
+            'error_message': str(error),
+            'context': context,
+            'timestamp': datetime.now().isoformat(),
+            'traceback': traceback.format_exc()
+        }
+
+        # 格式化详细错误信息
+        detailed_error_msg = f"""
+=== 分析失败详情 ===
+文件路径: {error_details['file_path']}
+错误类型: {error_details['error_type']}
+错误信息: {error_details['error_message']}
+上下文: {error_details['context']}
+时间戳: {error_details['timestamp']}
+堆栈跟踪:
+{error_details['traceback']}
+=== 结束 ===
+"""
+
+        # 创建专门的文件logger，只写入文件
+        file_logger = logging.getLogger('GitBlameLoader.FileOnly')
+        file_logger.setLevel(logging.ERROR)
+
+        # 清除现有处理器，只保留文件处理器
+        file_logger.handlers.clear()
+        file_handler = logging.FileHandler(self.log_file, encoding='utf-8')
+        file_formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        file_handler.setFormatter(file_formatter)
+        file_logger.addHandler(file_handler)
+        file_logger.propagate = False  # 不传播到父logger
+
+        # 写入详细错误信息到文件
+        file_logger.error(detailed_error_msg)
 
     def load_repository(
         self,
@@ -137,7 +205,7 @@ class GitBlameLoader:
                         total_lines += lines_count
                         self.logger.debug(f"分析文件 {file_path}: {lines_count} 行")
                     except Exception as e:
-                        self.logger.error(f"分析文件失败 {file_path}: {e}")
+                        self._log_analysis_error(file_path, e, "文件分析主循环")
                         continue
 
                 session.commit()
@@ -224,7 +292,8 @@ class GitBlameLoader:
             return files
 
         except subprocess.CalledProcessError as e:
-            self.logger.error(f"获取文件列表失败: {e}")
+            error_msg = f"获取文件列表失败: {e}"
+            self.logger.error(error_msg)
             return []
 
     def _cleanup_deleted_files(
@@ -272,7 +341,8 @@ class GitBlameLoader:
             return deleted_count
 
         except Exception as e:
-            self.logger.error(f"清理已删除文件失败: {e}")
+            error_msg = f"清理已删除文件失败: {e}"
+            self.logger.error(error_msg)
             return 0
 
     def _analyze_file_blame(
@@ -313,7 +383,7 @@ class GitBlameLoader:
             )
 
         except Exception as e:
-            self.logger.error(f"分析文件blame失败 {file_path}: {e}")
+            self._log_analysis_error(file_path, e, "文件blame分析")
             return 0
 
     def _should_skip_file(
@@ -365,7 +435,8 @@ class GitBlameLoader:
             return False
 
         except Exception as e:
-            self.logger.error(f"检查文件跳过条件失败 {file_path}: {e}")
+            error_msg = f"检查文件跳过条件失败 {file_path}: {e}"
+            self.logger.error(error_msg)
             # 出错时默认不跳过，继续处理
             return False
 
@@ -436,7 +507,8 @@ class GitBlameLoader:
             return self._parse_blame_output(result.stdout)
 
         except subprocess.CalledProcessError as e:
-            self.logger.error(f"git blame执行失败 {file_path}: {e}")
+            error_msg = f"git blame执行失败 {file_path}: {e}"
+            self.logger.error(error_msg)
             return []
 
     def _parse_blame_output(self, output: str) -> List[BlameResult]:
@@ -684,23 +756,25 @@ def load_git_blame_database(
     file_filter_regex: Optional[str] = None,
     repo_name: Optional[str] = None,
     repo_url: Optional[str] = None,
-    force_reload: bool = False
+    force_reload: bool = False,
+    log_file: str = "analyze-failed.log"
 ) -> bool:
     """
     便捷函数：加载git blame数据库
 
-    Args:
+        Args:
         repo_path: 仓库路径
         database_url: 数据库连接URL
         file_filter_regex: 文件过滤正则表达式
         repo_name: 仓库名称
         repo_url: 仓库URL
         force_reload: 是否强制重新加载所有文件
+        log_file: 错误日志文件路径
 
     Returns:
         bool: 是否加载成功
     """
-    loader = GitBlameLoader(database_url)
+    loader = GitBlameLoader(database_url, log_file=log_file)
     try:
         return loader.load_repository(
             repo_path, file_filter_regex, repo_name, repo_url, force_reload
