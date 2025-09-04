@@ -7,10 +7,57 @@ import os
 import re
 import subprocess
 import logging
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Tuple, Iterator
 from dataclasses import dataclass
+
+try:
+    from tqdm import tqdm
+    TQDM_AVAILABLE = True
+except ImportError:
+    TQDM_AVAILABLE = False
+    # 创建一个简单的替代类
+
+    class tqdm:
+        def __init__(self, iterable=None, total=None, desc=None, unit=None, **kwargs):
+            self.iterable = iterable
+            self.total = total
+            self.desc = desc or ""
+            self.unit = unit or "it"
+            self.n = 0
+
+        def __iter__(self):
+            if self.iterable:
+                for item in self.iterable:
+                    yield item
+                    self.n += 1
+                    if self.n % 10 == 0:  # 每10个项目显示一次进度
+                        print(
+                            f"\r{self.desc}: {self.n}/{self.total or '?'} {self.unit}", end="", flush=True)
+            else:
+                while self.n < (self.total or 0):
+                    yield self.n
+                    self.n += 1
+                    if self.n % 10 == 0:
+                        print(
+                            f"\r{self.desc}: {self.n}/{self.total} {self.unit}", end="", flush=True)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            print()  # 换行
+
+        def update(self, n=1):
+            self.n += n
+
+        def set_description(self, desc):
+            self.desc = desc
+
+        def set_postfix(self, **kwargs):
+            pass
 
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -37,7 +84,7 @@ class BlameResult:
 class GitBlameLoader:
     """Git Blame数据库加载器"""
 
-    def __init__(self, database_url: str, batch_size: int = 1000, log_file: str = "analyze-failed.log"):
+    def __init__(self, database_url: str, batch_size: int = 1000, log_file: str = "analyze-failed.log", show_progress: bool = True):
         """
         初始化加载器
 
@@ -45,10 +92,12 @@ class GitBlameLoader:
             database_url: 数据库连接URL
             batch_size: 批量插入大小
             log_file: 错误日志文件路径
+            show_progress: 是否显示进度条
         """
         self.database_url = database_url
         self.batch_size = batch_size
         self.log_file = log_file
+        self.show_progress = show_progress
         self.db_manager = DatabaseManager(database_url)
         self.logger = self._setup_logger()
 
@@ -294,19 +343,76 @@ class GitBlameLoader:
 
                 # 分析每个文件的blame信息
                 total_lines = 0
-                for file_path in files_to_analyze:
+                processed_files = 0
+                skipped_files = 0
+                failed_files = 0
+                start_time = time.time()
+
+                # 创建进度条
+                if self.show_progress and files_to_analyze:
+                    progress_bar = tqdm(
+                        files_to_analyze,
+                        desc="分析文件",
+                        unit="文件",
+                        ncols=100,
+                        bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}] {postfix}'
+                    )
+                else:
+                    progress_bar = files_to_analyze
+
+                for file_path in progress_bar:
                     try:
                         lines_count = self._analyze_file_blame(
                             session, repository, repo_path, file_path, force_reload
                         )
-                        total_lines += lines_count
+
+                        if lines_count > 0:
+                            total_lines += lines_count
+                            processed_files += 1
+                        else:
+                            skipped_files += 1
+
+                        # 更新进度条信息
+                        if self.show_progress and hasattr(progress_bar, 'set_postfix'):
+                            elapsed_time = time.time() - start_time
+                            files_per_sec = processed_files / elapsed_time if elapsed_time > 0 else 0
+                            progress_bar.set_postfix({
+                                '已处理': processed_files,
+                                '跳过': skipped_files,
+                                '失败': failed_files,
+                                '行数': total_lines,
+                                '速度': f'{files_per_sec:.1f}文件/秒'
+                            })
+
                         self.logger.debug(f"分析文件 {file_path}: {lines_count} 行")
+
                     except Exception as e:
+                        failed_files += 1
                         self._log_analysis_error(file_path, e, "文件分析主循环")
                         continue
 
+                # 关闭进度条
+                if self.show_progress and hasattr(progress_bar, 'close'):
+                    progress_bar.close()
+
                 session.commit()
-                self.logger.info(f"仓库加载完成: {total_lines} 行blame信息")
+
+                # 计算总时间和效率
+                total_time = time.time() - start_time
+                files_per_sec = len(files_to_analyze) / \
+                    total_time if total_time > 0 else 0
+                lines_per_sec = total_lines / total_time if total_time > 0 else 0
+
+                self.logger.info(f"仓库加载完成:")
+                self.logger.info(f"  - 总文件数: {len(files_to_analyze)}")
+                self.logger.info(f"  - 已处理: {processed_files}")
+                self.logger.info(f"  - 跳过: {skipped_files}")
+                self.logger.info(f"  - 失败: {failed_files}")
+                self.logger.info(f"  - 总行数: {total_lines}")
+                self.logger.info(f"  - 总耗时: {total_time:.2f}秒")
+                self.logger.info(f"  - 处理速度: {files_per_sec:.2f}文件/秒")
+                self.logger.info(f"  - 行处理速度: {lines_per_sec:.2f}行/秒")
+
                 return True
 
             except Exception as e:
@@ -892,12 +998,13 @@ def load_git_blame_database(
     repo_name: Optional[str] = None,
     repo_url: Optional[str] = None,
     force_reload: bool = False,
-    log_file: str = "analyze-failed.log"
+    log_file: str = "analyze-failed.log",
+    show_progress: bool = True
 ) -> bool:
     """
     便捷函数：加载git blame数据库
 
-        Args:
+                Args:
         repo_path: 仓库路径
         database_url: 数据库连接URL
         file_filter_regex: 文件过滤正则表达式
@@ -905,11 +1012,13 @@ def load_git_blame_database(
         repo_url: 仓库URL
         force_reload: 是否强制重新加载所有文件
         log_file: 错误日志文件路径
+        show_progress: 是否显示进度条
 
     Returns:
         bool: 是否加载成功
     """
-    loader = GitBlameLoader(database_url, log_file=log_file)
+    loader = GitBlameLoader(
+        database_url, log_file=log_file, show_progress=show_progress)
     try:
         return loader.load_repository(
             repo_path, file_filter_regex, repo_name, repo_url, force_reload

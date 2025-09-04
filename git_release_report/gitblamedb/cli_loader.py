@@ -50,6 +50,11 @@ def main():
   python -m git_release_report.gitblamedb.cli_loader /path/to/repo \\
     --log-file "debug-errors.log" \\
     --verbose
+
+  # 禁用进度条（适合脚本运行）
+  python -m git_release_report.gitblamedb.cli_loader /path/to/repo \\
+    --no-progress \\
+    --log-file "batch-errors.log"
         """
     )
 
@@ -110,6 +115,12 @@ def main():
         help='错误日志文件路径 (默认: analyze-failed.log)'
     )
 
+    parser.add_argument(
+        '--no-progress',
+        action='store_true',
+        help='禁用进度条显示'
+    )
+
     args = parser.parse_args()
 
     # 验证仓库路径
@@ -144,6 +155,10 @@ def main():
     if args.force_reload:
         print("🔄 强制重新加载: 是")
     print(f"📝 错误日志文件: {args.log_file}")
+    if args.no_progress:
+        print("📊 进度条: 禁用")
+    else:
+        print("📊 进度条: 启用")
     print("-" * 50)
 
     try:
@@ -155,7 +170,8 @@ def main():
             repo_name=args.name,
             repo_url=args.url,
             force_reload=args.force_reload,
-            log_file=args.log_file
+            log_file=args.log_file,
+            show_progress=not args.no_progress
         )
 
         if success:
