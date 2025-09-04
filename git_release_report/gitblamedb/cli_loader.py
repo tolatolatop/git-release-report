@@ -45,6 +45,11 @@ def main():
   python -m git_release_report.gitblamedb.cli_loader /path/to/repo \\
     --log-file "custom-errors.log" \\
     --verbose
+
+  # 调试模式 - 记录详细错误信息
+  python -m git_release_report.gitblamedb.cli_loader /path/to/repo \\
+    --log-file "debug-errors.log" \\
+    --verbose
         """
     )
 

@@ -133,6 +133,103 @@ class GitBlameLoader:
         # 写入详细错误信息到文件
         file_logger.error(detailed_error_msg)
 
+    def _safe_parse_int(self, value: str, default: int = 0) -> int:
+        """
+        安全地解析整数，处理非数字字符串
+
+        Args:
+            value: 要解析的字符串
+            default: 解析失败时的默认值
+
+        Returns:
+            int: 解析后的整数或默认值
+        """
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return default
+
+    def _dump_git_output_to_log(self, file_path: str, stdout: str, stderr: str, error_type: str):
+        """
+        将git命令的原始输出转储到日志文件
+
+        Args:
+            file_path: 文件路径
+            stdout: 标准输出
+            stderr: 标准错误
+            error_type: 错误类型
+        """
+        import traceback
+
+        dump_info = f"""
+=== Git输出转储 ===
+文件路径: {file_path}
+错误类型: {error_type}
+时间戳: {datetime.now().isoformat()}
+堆栈跟踪:
+{traceback.format_exc()}
+
+=== 标准输出 (stdout) ===
+{stdout if stdout else '(空)'}
+
+=== 标准错误 (stderr) ===
+{stderr if stderr else '(空)'}
+
+=== 输出转储结束 ===
+"""
+
+        # 创建专门的文件logger，只写入文件
+        file_logger = logging.getLogger('GitBlameLoader.OutputDump')
+        file_logger.setLevel(logging.ERROR)
+
+        # 清除现有处理器，只保留文件处理器
+        file_logger.handlers.clear()
+        file_handler = logging.FileHandler(self.log_file, encoding='utf-8')
+        file_formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        file_handler.setFormatter(file_formatter)
+        file_logger.addHandler(file_handler)
+        file_logger.propagate = False  # 不传播到父logger
+
+        # 写入转储信息到文件
+        file_logger.error(dump_info)
+
+    def _log_unparseable_line(self, line: str, error: str):
+        """
+        记录无法解析的blame行到日志文件
+
+        Args:
+            line: 无法解析的行内容
+            error: 错误信息
+        """
+        unparseable_info = f"""
+=== 无法解析的Blame行 ===
+时间戳: {datetime.now().isoformat()}
+错误信息: {error}
+行内容: {line}
+行长度: {len(line)}
+行内容(十六进制): {line.encode('utf-8').hex()}
+=== 结束 ===
+"""
+
+        # 创建专门的文件logger，只写入文件
+        file_logger = logging.getLogger('GitBlameLoader.UnparseableLine')
+        file_logger.setLevel(logging.ERROR)
+
+        # 清除现有处理器，只保留文件处理器
+        file_logger.handlers.clear()
+        file_handler = logging.FileHandler(self.log_file, encoding='utf-8')
+        file_formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        file_handler.setFormatter(file_formatter)
+        file_logger.addHandler(file_handler)
+        file_logger.propagate = False  # 不传播到父logger
+
+        # 写入无法解析的行信息到文件
+        file_logger.error(unparseable_info)
+
     def load_repository(
         self,
         repo_path: str,
@@ -504,10 +601,32 @@ class GitBlameLoader:
                 check=True
             )
 
-            return self._parse_blame_output(result.stdout)
+            # 检查输出是否为空
+            if not result.stdout.strip():
+                self.logger.debug(f"git blame输出为空: {file_path}")
+                return []
+
+            try:
+                return self._parse_blame_output(result.stdout)
+            except Exception as parse_error:
+                # 如果解析失败，转储原始输出到日志
+                self._dump_git_output_to_log(
+                    file_path, result.stdout, "", f"ParseError: {parse_error}")
+                return []
 
         except subprocess.CalledProcessError as e:
-            error_msg = f"git blame执行失败 {file_path}: {e}"
+            # 检查是否是文件不存在或无法访问的错误
+            if e.returncode == 128:  # Git错误代码
+                self.logger.debug(f"git blame无法处理文件 {file_path}: {e.stderr}")
+            else:
+                error_msg = f"git blame执行失败 {file_path}: {e}"
+                self.logger.error(error_msg)
+                # 转储原始输出到日志文件
+                self._dump_git_output_to_log(
+                    file_path, e.stdout, e.stderr, "CalledProcessError")
+            return []
+        except Exception as e:
+            error_msg = f"git blame执行异常 {file_path}: {e}"
             self.logger.error(error_msg)
             return []
 
@@ -529,10 +648,25 @@ class GitBlameLoader:
                 i += 1
                 continue
 
-            commit_sha = parts[0]
-            original_line = int(parts[1])
-            current_line = int(parts[2])
-            line_count = int(parts[3])
+            try:
+                commit_sha = parts[0]
+                # 安全地解析行号，处理非数字情况
+                original_line = self._safe_parse_int(parts[1], 0)
+                current_line = self._safe_parse_int(parts[2], 0)
+                line_count = self._safe_parse_int(parts[3], 1)
+
+                # 如果行号无效，跳过这一行
+                if original_line <= 0 or current_line <= 0 or line_count <= 0:
+                    i += 1
+                    continue
+
+            except (ValueError, IndexError) as e:
+                # 如果解析失败，记录错误并跳过
+                self.logger.debug(f"跳过无法解析的blame行: {line[:100]}... 错误: {e}")
+                # 记录无法解析的行到日志文件
+                self._log_unparseable_line(line, str(e))
+                i += 1
+                continue
 
             # 解析后续的元数据
             author_name = ""
@@ -548,8 +682,9 @@ class GitBlameLoader:
                 elif meta_line.startswith('author-mail '):
                     author_email = meta_line[12:].strip('<>')
                 elif meta_line.startswith('author-time '):
-                    timestamp = int(meta_line[12:])
-                    authored_time = datetime.fromtimestamp(timestamp)
+                    timestamp = self._safe_parse_int(meta_line[12:], 0)
+                    if timestamp > 0:
+                        authored_time = datetime.fromtimestamp(timestamp)
                 elif meta_line.startswith('boundary'):
                     is_merge_line = True
                 j += 1
