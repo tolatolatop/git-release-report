@@ -1,4 +1,5 @@
 import os
+import time
 import re
 import subprocess as sp
 from typing import List
@@ -44,3 +45,10 @@ def list_files(repo_path: str, regex: str) -> List[str]:
         if re_match.match(path):
             res.append(path)
     return res
+
+
+def get_file_last_modified(repo_path: str, file_path: str) -> float:
+    try:
+        return os.stat(os.path.join(repo_path, file_path)).st_mtime
+    except Exception:
+        return 9999999999
