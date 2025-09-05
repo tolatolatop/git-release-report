@@ -2,7 +2,7 @@ import os
 import time
 import re
 import subprocess as sp
-from typing import List
+from typing import List, Tuple
 from git import Repo, Commit
 
 
@@ -52,3 +52,14 @@ def get_file_last_modified(repo_path: str, file_path: str) -> float:
         return os.stat(os.path.join(repo_path, file_path)).st_mtime
     except Exception:
         return 9999999999
+
+
+def get_file_blame(repo_path: str, file_path: str) -> List[Tuple[str, int]]:
+    info_match = re.compile(
+        r'^(?<commit_sha>[\^0-9a-f]{40}) \(.*?(?<line_number>\d+)\)', re.MULTILINE
+    )
+    repo = Repo(repo_path)
+    output = repo.git.blame(repo.head.commit.hexsha,
+                            '-l', '-w', '-M', '-C', '--', file_path)
+    info_matches = info_match.findall(output)
+    return [(match[0], int(match[1])) for match in info_matches]
