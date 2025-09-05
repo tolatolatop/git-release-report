@@ -8,6 +8,8 @@ dependencies = []
 
 [project.scripts]
 release-report = "git_release_report.cli:main"
+create-repo-db = "git_release_report.gitblamedb.cli:create_db"
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"
 
