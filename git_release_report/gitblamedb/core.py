@@ -4,6 +4,9 @@ import re
 import subprocess as sp
 from typing import List, Tuple
 from git import Repo, Commit
+from .models import Commit as CommitModel
+from .models import BlameLine as BlameLineModel
+from .models import FileCache as FileCacheModel
 
 
 def find_git_repos(root_dir: str, maxdepth: int = 3) -> List[str]:
@@ -63,3 +66,33 @@ def get_file_blame(repo_path: str, file_path: str) -> List[Tuple[str, int]]:
                             '-l', '-w', '-M', '-C', '--', file_path)
     info_matches = info_match.findall(output)
     return [(match[0], int(match[1])) for match in info_matches]
+
+
+def to_commit_model(repo_name: str, commit: Commit) -> CommitModel:
+    return CommitModel(
+        repo_name=repo_name,
+        sha=commit.hexsha,
+        commit_message=commit.message,
+        commit_time=commit.authored_date,
+        author_name=commit.author.name,
+        author_email=commit.author.email,
+        committer_name=commit.committer.name,
+        committer_email=commit.committer.email,
+    )
+
+
+def to_blame_line_model(repo_name: str, file_path: str, blame: Tuple[str, int]) -> BlameLineModel:
+    return BlameLineModel(
+        repo_name=repo_name,
+        file_path=file_path,
+        line_number=blame[1],
+        commit_sha=blame[0],
+    )
+
+
+def to_file_cache_model(repo_name: str, file_path: str) -> FileCacheModel:
+    return FileCacheModel(
+        repo_name=repo_name,
+        file_path=file_path,
+        last_modified=get_file_last_modified(repo_name, file_path),
+    )
