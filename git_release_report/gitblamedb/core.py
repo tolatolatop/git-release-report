@@ -7,6 +7,8 @@ from git import Repo, Commit
 from .models import Commit as CommitModel
 from .models import BlameLine as BlameLineModel
 from .models import FileCache as FileCacheModel
+from .models import RepoData
+from .models import load_data_by_repo_name
 
 
 def find_git_repos(root_dir: str, maxdepth: int = 3) -> List[str]:
@@ -96,3 +98,12 @@ def to_file_cache_model(repo_name: str, file_path: str) -> FileCacheModel:
         file_path=file_path,
         last_modified=get_file_last_modified(repo_name, file_path),
     )
+
+
+def filter_by_file_cache(repo_data: RepoData, file_paths: List[FileCacheModel]) -> List[FileCacheModel]:
+    out = []
+    for file_path in file_paths:
+        if file_path in repo_data.file_cache or file_path.last_modified <= repo_data.file_cache[file_path].last_modified:
+            continue
+        out.append(file_path)
+    return out
