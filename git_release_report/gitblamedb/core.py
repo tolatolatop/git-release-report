@@ -133,7 +133,7 @@ def create_blame_repo(repo_path: str, regex: str, sess: Session):
         commit_id_set.add(blame_line.commit_sha)
 
     repo = Repo(repo_path)
-    commits = repo.iter_commits(commit_id_set)
+    commits = [repo.commit(commit_id) for commit_id in commit_id_set]
     commits = [to_commit_model(repo_path, commit) for commit in commits]
 
     return file_cache, blame_lines, commits
