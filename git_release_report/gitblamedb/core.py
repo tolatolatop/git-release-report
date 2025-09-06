@@ -9,6 +9,7 @@ from .models import BlameLine as BlameLineModel
 from .models import FileCache as FileCacheModel
 from .models import RepoData
 from .models import load_data_by_repo_name
+from sqlalchemy.orm import Session
 
 
 def find_git_repos(root_dir: str, maxdepth: int = 3) -> List[str]:
@@ -100,10 +101,39 @@ def to_file_cache_model(repo_name: str, file_path: str) -> FileCacheModel:
     )
 
 
-def filter_by_file_cache(repo_data: RepoData, file_paths: List[FileCacheModel]) -> List[FileCacheModel]:
+def filter_by_last_modified(repo_data: RepoData, file_paths: List[FileCacheModel]) -> List[FileCacheModel]:
     out = []
     for file_path in file_paths:
         if file_path in repo_data.file_cache or file_path.last_modified <= repo_data.file_cache[file_path].last_modified:
             continue
         out.append(file_path)
     return out
+
+
+def create_blame_repo(repo_path: str, regex: str, sess: Session):
+    file_paths = list_files(repo_path, regex)
+    file_cache = [
+        to_file_cache_model(repo_path, file_path)
+        for file_path in file_paths
+    ]
+    repo_data = load_data_by_repo_name(sess, repo_path, [FileCacheModel])
+    file_cache = filter_by_last_modified(repo_data, file_cache)
+
+    blame_lines = []
+    for f in file_cache:
+        blame_lines.extend(get_file_blame(repo_path, f.file_path))
+
+    blame_lines = [
+        to_blame_line_model(repo_path, f.file_path, blame)
+        for blame in blame_lines
+    ]
+
+    commit_id_set = set()
+    for blame_line in blame_lines:
+        commit_id_set.add(blame_line.commit_sha)
+
+    repo = Repo(repo_path)
+    commits = repo.iter_commits(commit_id_set)
+    commits = [to_commit_model(repo_path, commit) for commit in commits]
+
+    return file_cache, blame_lines, commits
