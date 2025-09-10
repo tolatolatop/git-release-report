@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from dataclasses import dataclass
 from collections import defaultdict
 from typing import List, TypeVar, Generic, Dict, Iterator, Type
+from sqlalchemy.engine import Engine
+from sqlalchemy import create_engine as create_engine_func
 
 Base = declarative_base()
 
@@ -131,3 +133,19 @@ def load_data_by_repo_name(session: Session, repo_name: str, exclude: List[Type[
     for blame_line in blame_lines:
         blame_lines_dict[blame_line.file_path][blame_line.line_number] = blame_line
     return RepoData(repo_name, commits_dict, file_cache_dict, blame_lines_dict)
+
+
+def init_db(engine: Engine):
+    Base.metadata.create_all(engine)
+
+
+def get_session(engine: Engine):
+    return Session(engine)
+
+
+def create_engine(db_url: str):
+    return create_engine_func(db_url)
+
+
+def create_sqlite_engine(db_path: str):
+    return create_engine_func(f'sqlite:///{db_path}')
