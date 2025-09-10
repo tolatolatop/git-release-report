@@ -3,6 +3,8 @@ from git_release_report.gitblamedb.models import create_sqlite_engine
 from git_release_report.gitblamedb.models import init_db
 from git_release_report.gitblamedb.models import get_session
 from git_release_report.gitblamedb.core import create_blame_repo
+from git_release_report.gitblamedb.core import load_data_by_repo_name
+from git_release_report.gitblamedb import models
 
 
 @pytest.fixture
@@ -15,4 +17,14 @@ def session():
 
 
 def test_create_blame_repo(session):
-    create_blame_repo('tests/test_repo', r'.*\.md', session)
+    file_cache, blame_lines, commits = create_blame_repo(
+        'tests/test_repo', r'^package\.json$', session)
+    assert len(file_cache) == 1
+    assert file_cache[0].file_path == 'package.json'
+    assert len(commits) == 150
+    commit_ids = [commit.sha for commit in commits]
+    assert "8f35cc4768393b25468416829e980d7550619fb1" in commit_ids
+    assert len(blame_lines) == 240
+    assert blame_lines[0].file_path == 'package.json'
+    assert blame_lines[0].line_number == 1
+    assert blame_lines[0].commit_sha == "8f35cc4768393b25468416829e980d7550619fb1"
