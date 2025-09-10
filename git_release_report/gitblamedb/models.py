@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, ForeignKey, Text, Boolean, PrimaryKeyConstraint, DateTime, UniqueConstraint
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import Session
 from dataclasses import dataclass
 from collections import defaultdict
@@ -15,11 +15,11 @@ Base = declarative_base()
 T = TypeVar('T')
 
 
-class Model(Base):
+class Model:
     _unique_fields__ = []
 
 
-class Commit(Model):
+class Commit(Base, Model):
     __tablename__ = 'commits'
     id = Column(Integer, primary_key=True)
     repo_name = Column(String(255), nullable=False)
@@ -39,7 +39,7 @@ class Commit(Model):
     )
 
 
-class FileCache(Model):
+class FileCache(Base, Model):
     __tablename__ = 'file_cache'
     id = Column(Integer, primary_key=True)
     repo_name = Column(String(255), nullable=False)
@@ -54,7 +54,7 @@ class FileCache(Model):
     )
 
 
-class BlameLine(Model):
+class BlameLine(Base, Model):
     __tablename__ = 'blame_lines'
     id = Column(Integer, primary_key=True)
     repo_name = Column(String(255), nullable=False)
