@@ -41,7 +41,7 @@ def list_files(repo_path: str, regex: str) -> List[str]:
     output: str = repo.git.ls_tree(repo.head.commit.hexsha,
                                    '--full-tree', '--name-only')
     paths = [
-        os.path.join(repo_path, path)
+        path
         for path in output.strip().splitlines()
     ]
 
@@ -62,11 +62,10 @@ def get_file_last_modified(repo_path: str, file_path: str) -> float:
 
 def get_file_blame(repo_path: str, file_path: str) -> List[Tuple[str, int]]:
     info_match = re.compile(
-        r'^(?<commit_sha>[\^0-9a-f]{40}) \(.*?(?<line_number>\d+)\)', re.MULTILINE
+        r'^(?P<commit_sha>[\^0-9a-f]+)\s+\(.*?(?P<line_number>\d+)\)', re.MULTILINE
     )
     repo = Repo(repo_path)
-    output = repo.git.blame(repo.head.commit.hexsha,
-                            '-l', '-w', '-M', '-C', '--', file_path)
+    output = repo.git.blame('-l', '-w', '-M', '-C', '--', file_path)
     info_matches = info_match.findall(output)
     return [(match[0], int(match[1])) for match in info_matches]
 
@@ -114,12 +113,13 @@ def filter_by_last_modified(repo_data: RepoData, file_paths: List[FileCacheModel
 
 
 def create_blame_repo(repo_path: str, regex: str, sess: Session):
+    repo_name = os.path.basename(repo_path)
     file_paths = list_files(repo_path, regex)
     file_cache = [
-        to_file_cache_model(repo_path, file_path)
+        to_file_cache_model(repo_name, file_path)
         for file_path in file_paths
     ]
-    repo_data = load_data_by_repo_name(sess, repo_path, [FileCacheModel])
+    repo_data = load_data_by_repo_name(sess, repo_name, [FileCacheModel])
     file_cache = filter_by_last_modified(repo_data, file_cache)
 
     blame_lines = []
@@ -127,7 +127,7 @@ def create_blame_repo(repo_path: str, regex: str, sess: Session):
         blame_lines.extend(get_file_blame(repo_path, f.file_path))
 
     blame_lines = [
-        to_blame_line_model(repo_path, f.file_path, blame)
+        to_blame_line_model(repo_name, f.file_path, blame)
         for blame in blame_lines
     ]
 
@@ -137,6 +137,6 @@ def create_blame_repo(repo_path: str, regex: str, sess: Session):
 
     repo = Repo(repo_path)
     commits = [repo.commit(commit_id) for commit_id in commit_id_set]
-    commits = [to_commit_model(repo_path, commit) for commit in commits]
+    commits = [to_commit_model(repo_name, commit) for commit in commits]
 
     return file_cache, blame_lines, commits
