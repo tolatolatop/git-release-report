@@ -104,9 +104,12 @@ def to_file_cache_model(repo_name: str, file_path: str) -> FileCacheModel:
 def filter_by_last_modified(repo_data: RepoData, file_paths: List[FileCacheModel]) -> List[FileCacheModel]:
     out = []
     for file_path in file_paths:
-        if file_path in repo_data.file_cache or file_path.last_modified <= repo_data.file_cache[file_path].last_modified:
-            continue
-        out.append(file_path)
+        if file_path not in repo_data.file_cache:
+            out.append(file_path)
+        elif file_path.last_modified <= repo_data.file_cache[file_path.file_path].last_modified:
+            out.append(file_path)
+        else:
+            pass
     return out
 
 
