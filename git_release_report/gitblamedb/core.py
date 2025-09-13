@@ -67,7 +67,20 @@ def get_file_blame(repo_path: str, file_path: str) -> List[Tuple[str, int]]:
     repo = Repo(repo_path)
     output = repo.git.blame('-l', '-w', '-M', '-C', '--', file_path)
     info_matches = info_match.findall(output)
-    return [(match[0], int(match[1])) for match in info_matches]
+    if output.count('\n') != len(info_matches) - 1:
+        num = [n for _, n in info_matches]
+        raise ValueError(f"Invalid blame output: {output}\n{num}")
+
+    root_id = None
+    for commit_sha, _ in info_matches:
+        if commit_sha.startswith('^'):
+            root_id = repo.commit(commit_sha[1:]).hexsha
+            break
+    out = [(
+        root_id if commit_sha.startswith('^') else commit_sha,
+        int(line_number),
+    ) for commit_sha, line_number in info_matches]
+    return out
 
 
 def to_commit_model(repo_name: str, commit: Commit) -> CommitModel:
