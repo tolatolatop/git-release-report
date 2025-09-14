@@ -55,7 +55,7 @@ def test_list_blame_lines(repo_path, old_commit, new_commit):
     # 因为new_commit是merge commit，可能没有对应的blame信息
     assert blame_lines_df['sha'].str.contains(new_commit).values.sum() == 0
 
-    commit_df = ndfb.list_commits(repo_path, f"{new_commit}^1", f"{new_commit}^2")
+    commit_df = ndfb.list_merge_commits(repo_path, new_commit)
     commit_id = "1fcf686def190"
     assert commit_df['sha'].str.contains(commit_id).values.sum() > 0
     assert blame_lines_df['sha'].str.contains(commit_id).values.sum() > 0
