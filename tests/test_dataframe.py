@@ -42,3 +42,12 @@ def test_list_diff_info(repo_path, old_commit, new_commit):
     assert diff_info_df['a_path'].iloc[2] == 'Documentation/ABI/testing/sysfs-devices-system-cpu'
     assert diff_info_df['b_path'].iloc[2] == 'Documentation/ABI/testing/sysfs-devices-system-cpu'
     assert diff_info_df['change_type'].iloc[2] == 'M'
+
+
+def test_list_blame_lines(repo_path, old_commit, new_commit):
+    blame_lines_df = ndfb.list_blame_lines(repo_path, 'fs/erofs/erofs_fs.h')
+    assert len(blame_lines_df) == 466
+    assert blame_lines_df['sha'].iloc[0] == '29b24f6ca112d168ae17c66343464a2581c573e0'
+    assert blame_lines_df['line_number'].iloc[0] == 1
+    assert blame_lines_df['file_path'].iloc[0] == 'fs/erofs/erofs_fs.h'
+    assert blame_lines_df['repo_path'].iloc[0] == repo_path

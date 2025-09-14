@@ -44,3 +44,21 @@ def list_diff_info(repo_path: str, old_commit: str, new_commit: str) -> pd.DataF
         pd.DataFrame: diff信息数据框
     """
     return pd.DataFrame([diff_info.to_dict() for diff_info in core.get_diff_info(repo_path, old_commit, new_commit)])
+
+
+def list_blame_lines(repo_path: str, file_path: str) -> pd.DataFrame:
+    """
+    列出仓库中的blame信息
+
+    Args:
+        repo_path: 仓库路径
+        file_path: 文件路径
+
+    Returns:
+        pd.DataFrame: blame信息数据框
+    """
+
+    df = pd.DataFrame([blame_line for blame_line in core.get_file_blame(repo_path, file_path)], columns=['sha', 'line_number'])
+    df['repo_path'] = repo_path
+    df['file_path'] = file_path
+    return df
