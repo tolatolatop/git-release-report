@@ -239,21 +239,21 @@ def create_blame_repo(repo_path: str, regex: str, sess: Session):
     return file_cache, blame_lines, commits
 
 
-def list_commits(repo_path: str, rev_1: str, rev_2: str) -> List[CommitModel]:
+def list_commits(repo_path: str, old_commit: str, new_commit: str) -> List[CommitModel]:
     """
     列出仓库中的commit
 
     Args:
         repo_path: 仓库路径
-        rev_1: 第一个提交
-        rev_2: 第二个提交
+        old_commit: 第一个提交
+        new_commit: 第二个提交
 
     Returns:
         List[CommitModel]: commit模型列表
     """
     repo_name = os.path.basename(repo_path)
     repo = Repo(repo_path)
-    return [to_commit_model(repo_name, commit) for commit in repo.iter_commits(f"{rev_1}..{rev_2}")]
+    return [to_commit_model(repo_name, commit) for commit in repo.iter_commits(f"{old_commit}..{new_commit}")]
 
 
 def get_commit(repo_path: str, commit_id: str) -> CommitModel:
