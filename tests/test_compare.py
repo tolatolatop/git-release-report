@@ -23,4 +23,5 @@ def test_compare_commits(repo_path, old_commit, new_commit):
     assert len(result['commits_df']) == 223
     # assert len(result.commits_stats_df) == 17718
     assert len(result['diff_info_df']) == 231
-    assert len(result['blame_lines_df']) == 466
+    # 大约2分钟
+    assert len(result['blame_lines_df']) == 543180
