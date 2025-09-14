@@ -284,7 +284,7 @@ def to_commit_stats_model(repo_name: str, commit_id: str, filepath: str, stat: d
 
 def get_commit_stats(repo_path: str, commit_id: str) -> List[CommitStatModel]:
     """
-    获取diff信息
+    获取commit统计信息
 
     Args:
         repo_path: 仓库路径
