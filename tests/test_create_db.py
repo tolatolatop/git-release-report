@@ -6,7 +6,7 @@ from git_release_report.gitblamedb.core import create_blame_repo
 from git_release_report.gitblamedb.core import load_data_by_repo_name
 from git_release_report.gitblamedb import models
 from git_release_report.gitblamedb.core import get_commit
-
+from git_release_report.gitblamedb.core import get_diff_info
 from git_release_report.gitblamedb.core import get_commit_stats
 
 @pytest.fixture
@@ -39,6 +39,13 @@ def test_to_commit_model():
 
 
 def test_diff_info():
-    diffs = get_commit_stats('tests/test_repo', '6f9e2ae3907')
+    commit_stats = get_commit_stats('tests/test_repo', '6f9e2ae3907')
+    assert len(commit_stats) == 5
+    assert commit_stats[0].filepath == 'ThirdPartyNotices.txt'
+
+    diffs = get_diff_info('tests/test_repo', '8f35cc4768393b25468416829e980d7550619fb1', '6f9e2ae3907')
     assert len(diffs) == 5
-    assert diffs[0].filepath == 'ThirdPartyNotices.txt'
+    assert diffs[0].a_path == 'ThirdPartyNotices.txt'
+    assert diffs[1].a_path == 'build/lib/typescript/OSSREADME.json'
+    assert diffs[1].change_type == "A"
+    assert diffs[1].b_path == 'build/lib/typescript/OSSREADME.json'

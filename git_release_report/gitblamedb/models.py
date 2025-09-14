@@ -51,13 +51,7 @@ class DiffInfo(Base, Model):
     commit_sha = Column(String(40), nullable=False)
     a_path = Column(String(2048), nullable=False)
     b_path = Column(String(2048), nullable=False)
-    rename_from = Column(String(2048), nullable=False)
-    rename_to = Column(String(2048), nullable=False)
-    add_lines = Column(Integer, nullable=False)
-    del_lines = Column(Integer, nullable=False)
     change_type = Column(String(1), nullable=False)
-    a_mode = Column(String(10), nullable=False)
-    b_mode = Column(String(10), nullable=False)
     
 
 class CommitStat(Base, Model):

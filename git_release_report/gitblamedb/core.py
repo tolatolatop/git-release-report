@@ -296,3 +296,32 @@ def get_commit_stats(repo_path: str, commit_id: str) -> List[CommitStatModel]:
     return [to_commit_stats_model(repo_name, commit.hexsha, file, stat)
         for file, stat in commit.stats.files.items()
     ]
+
+
+def to_diff_info_model(repo_name: str, rev_1: str, rev_2: str, diff: Diff) -> DiffInfoModel:
+    """
+    将diff信息转换为diff模型
+    """
+    return DiffInfoModel(
+        repo_name=repo_name,
+        commit_sha=rev_1,
+        a_path=diff.a_path,
+        b_path=diff.b_path,
+        change_type=diff.change_type,
+    )
+
+
+
+def get_diff_info(repo_path: str, rev_1: str, rev_2: str) -> List[DiffInfoModel]:
+    """
+    获取diff信息
+
+    Args:
+        repo_path: 仓库路径
+        rev_1: 第一个提交
+        rev_2: 第二个提交
+    """ 
+    repo_name = os.path.basename(repo_path)
+    repo = Repo(repo_path)
+    diff  = repo.commit(rev_1).diff(rev_2)
+    return [to_diff_info_model(repo_name, rev_1, rev_2, diff) for diff in diff]
