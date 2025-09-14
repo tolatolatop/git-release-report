@@ -1,4 +1,5 @@
 import pytest
+from git import Repo
 from git_release_report.gitblamedb import dataframe as ndfb
 from git_release_report.gitblamedb.dataframe import list_commits
 
@@ -51,3 +52,11 @@ def test_list_blame_lines(repo_path, old_commit, new_commit):
     assert blame_lines_df['line_number'].iloc[0] == 1
     assert blame_lines_df['file_path'].iloc[0] == 'fs/erofs/erofs_fs.h'
     assert blame_lines_df['repo_path'].iloc[0] == repo_path
+    # 因为new_commit是merge commit，可能没有对应的blame信息
+    assert blame_lines_df['sha'].str.contains(new_commit).values.sum() == 0
+
+    commit_df = ndfb.list_commits(repo_path, f"{new_commit}^1", f"{new_commit}^2")
+    commit_id = "1fcf686def190"
+    assert commit_df['sha'].str.contains(commit_id).values.sum() > 0
+    assert blame_lines_df['sha'].str.contains(commit_id).values.sum() > 0
+
