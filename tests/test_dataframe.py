@@ -24,6 +24,10 @@ def test_list_commits(repo_path, old_commit, new_commit):
     filter = commit_df['sha'].str.contains(old_commit[:-1]).values
     assert len(commit_df[filter].values) == 1
 
+    # list中会包含merge的子commit
+    commit_id = "1fcf686def190"
+    assert commit_df['sha'].str.contains(commit_id).values.sum() > 0
+
 
 def test_list_commit_stats(repo_path, old_commit, new_commit):
     commit_stats_df = ndfb.list_commit_stats(repo_path, new_commit)
