@@ -22,6 +22,7 @@ def new_commit():
 
 
 def save_result(cache, key, result: dict):
+    result = result.copy()
     cache_path = Path(f".pytest_cache/{key}")
     cache_path.mkdir(parents=True, exist_ok=True)
     for k, v in result.items():
