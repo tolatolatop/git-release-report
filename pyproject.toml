@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Precision release diff & contributor analytics"
 authors = [{name="Your Team"}]
 requires-python = ">=3.10"
-dependencies = ["tdqm (>=0.0.1,<0.0.2)"]
+dependencies = ["tdqm (>=0.0.1,<0.0.2)", "pandas (>=2.3.2,<3.0.0)"]
 
 [project.scripts]
 release-report = "git_release_report.cli:main"
