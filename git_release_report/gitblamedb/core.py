@@ -13,6 +13,16 @@ from sqlalchemy.orm import Session
 
 
 def find_git_repos(root_dir: str, maxdepth: int = 3) -> List[str]:
+    """
+    查找git仓库
+
+    Args:
+        root_dir: 根目录
+        maxdepth: 最大深度
+
+    Returns:
+        List[str]: git仓库列表
+    """
     output = sp.check_output(
         [
             'find', '-L', root_dir, '-maxdepth',
@@ -37,6 +47,17 @@ def find_git_repos(root_dir: str, maxdepth: int = 3) -> List[str]:
 
 
 def list_files(repo_path: str, regex: str) -> List[str]:
+    """
+    列出仓库中的文件
+
+    Args:
+        repo_path: 仓库路径
+        regex: 文件名匹配正则表达式
+
+    Returns:
+        List[str]: 文件列表
+    """
+
     repo = Repo(repo_path)
     output: str = repo.git.ls_tree(repo.head.commit.hexsha,
                                    '--full-tree', '--name-only')
@@ -54,6 +75,16 @@ def list_files(repo_path: str, regex: str) -> List[str]:
 
 
 def get_file_last_modified(repo_path: str, file_path: str) -> float:
+    """
+    获取文件的最后修改时间
+
+    Args:
+        repo_path: 仓库路径
+        file_path: 文件路径
+
+    Returns:
+        float: 最后修改时间
+    """
     try:
         return os.stat(os.path.join(repo_path, file_path)).st_mtime
     except Exception:
@@ -61,6 +92,16 @@ def get_file_last_modified(repo_path: str, file_path: str) -> float:
 
 
 def get_file_blame(repo_path: str, file_path: str) -> List[Tuple[str, int]]:
+    """
+    获取文件的blame信息
+
+    Args:
+        repo_path: 仓库路径
+        file_path: 文件路径
+
+    Returns:
+        List[Tuple[str, int]]: 行号和commit_sha
+    """
     info_match = re.compile(
         r'^(?P<commit_sha>[\^0-9a-f]+)\s+\(.*?(?P<line_number>\d+)\)', re.MULTILINE
     )
@@ -84,6 +125,16 @@ def get_file_blame(repo_path: str, file_path: str) -> List[Tuple[str, int]]:
 
 
 def to_commit_model(repo_name: str, commit: Commit) -> CommitModel:
+    """
+    将commit转换为commit模型
+
+    Args:
+        repo_name: 仓库名称
+        commit: commit对象
+
+    Returns:
+        CommitModel: commit模型
+    """
     return CommitModel(
         repo_name=repo_name,
         sha=commit.hexsha,
@@ -97,6 +148,14 @@ def to_commit_model(repo_name: str, commit: Commit) -> CommitModel:
 
 
 def to_blame_line_model(repo_name: str, file_path: str, blame: Tuple[str, int]) -> BlameLineModel:
+    """
+    将blame信息转换为blame模型
+
+    Args:
+        repo_name: 仓库名称
+        file_path: 文件路径
+        blame: 行号和commit_sha
+    """
     return BlameLineModel(
         repo_name=repo_name,
         file_path=file_path,
@@ -106,6 +165,13 @@ def to_blame_line_model(repo_name: str, file_path: str, blame: Tuple[str, int]) 
 
 
 def to_file_cache_model(repo_name: str, file_path: str) -> FileCacheModel:
+    """
+    将文件转换为文件模型
+
+    Args:
+        repo_name: 仓库名称
+        file_path: 文件路径
+    """
     return FileCacheModel(
         repo_name=repo_name,
         file_path=file_path,
@@ -114,6 +180,13 @@ def to_file_cache_model(repo_name: str, file_path: str) -> FileCacheModel:
 
 
 def filter_by_last_modified(repo_data: RepoData, file_paths: List[FileCacheModel]) -> List[FileCacheModel]:
+    """
+    根据最后修改时间过滤文件
+
+    Args:
+        repo_data: 仓库数据
+        file_paths: 文件路径列表
+    """
     out = []
     for file_path in file_paths:
         if file_path not in repo_data.file_cache:
@@ -126,6 +199,14 @@ def filter_by_last_modified(repo_data: RepoData, file_paths: List[FileCacheModel
 
 
 def create_blame_repo(repo_path: str, regex: str, sess: Session):
+    """
+    创建仓库的blame信息
+
+    Args:
+        repo_path: 仓库路径
+        regex: 文件名匹配正则表达式
+        sess: 数据库会话
+    """
     repo_name = os.path.basename(repo_path)
     file_paths = list_files(repo_path, regex)
     file_cache = [
