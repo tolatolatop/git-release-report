@@ -251,3 +251,15 @@ def list_commits(repo_path: str, rev_1: str, rev_2: str) -> List[CommitModel]:
     repo_name = os.path.basename(repo_path)
     repo = Repo(repo_path)
     return [to_commit_model(repo_name, commit) for commit in repo.iter_commits(f"{rev_1}..{rev_2}")]
+
+
+def get_commit(repo_path: str, commit_id: str) -> CommitModel:
+    """
+    获取commit
+
+    Args:
+        repo_path: 仓库路径
+        commit_id: 提交id
+    """
+    repo = Repo(repo_path)
+    return to_commit_model(os.path.basename(repo_path), repo.commit(commit_id))
