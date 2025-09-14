@@ -3,10 +3,12 @@ import time
 import re
 import subprocess as sp
 from typing import List, Tuple
-from git import Repo, Commit
+from git import Repo, Commit, Diff
 from .models import Commit as CommitModel
 from .models import BlameLine as BlameLineModel
 from .models import FileCache as FileCacheModel
+from .models import DiffInfo as DiffInfoModel
+from .models import CommitStat as CommitStatModel
 from .models import RepoData
 from .models import load_data_by_repo_name
 from sqlalchemy.orm import Session
@@ -264,3 +266,33 @@ def get_commit(repo_path: str, commit_id: str) -> CommitModel:
     """
     repo = Repo(repo_path)
     return to_commit_model(os.path.basename(repo_path), repo.commit(commit_id))
+
+
+def to_commit_stats_model(repo_name: str, commit_id: str, filepath: str, stat: dict) -> CommitStatModel:
+    """
+    将diff信息转换为commit统计模型
+    """
+    return CommitStatModel(
+        repo_name=repo_name,
+        commit_sha=commit_id,
+        filepath=filepath,
+        change_type=stat['change_type'],
+        add_lines=stat['insertions'],
+        del_lines=stat['deletions'],
+    )
+
+
+def get_commit_stats(repo_path: str, commit_id: str) -> List[CommitStatModel]:
+    """
+    获取diff信息
+
+    Args:
+        repo_path: 仓库路径
+        commit_id: 提交id
+    """
+    repo_name = os.path.basename(repo_path)
+    repo = Repo(repo_path)
+    commit = repo.commit(commit_id)
+    return [to_commit_stats_model(repo_name, commit.hexsha, file, stat)
+        for file, stat in commit.stats.files.items()
+    ]

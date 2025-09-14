@@ -43,6 +43,33 @@ class Commit(Base, Model):
         UniqueConstraint(*_unique_fields__, name='uq_commit_repo_sha'),
     )
 
+
+class DiffInfo(Base, Model):
+    __tablename__ = 'diff_info'
+    id = Column(Integer, primary_key=True)
+    repo_name = Column(String(255), nullable=False)
+    commit_sha = Column(String(40), nullable=False)
+    a_path = Column(String(2048), nullable=False)
+    b_path = Column(String(2048), nullable=False)
+    rename_from = Column(String(2048), nullable=False)
+    rename_to = Column(String(2048), nullable=False)
+    add_lines = Column(Integer, nullable=False)
+    del_lines = Column(Integer, nullable=False)
+    change_type = Column(String(1), nullable=False)
+    a_mode = Column(String(10), nullable=False)
+    b_mode = Column(String(10), nullable=False)
+    
+
+class CommitStat(Base, Model):
+    __tablename__ = 'commit_stat'
+    id = Column(Integer, primary_key=True)
+    repo_name = Column(String(255), nullable=False)
+    commit_sha = Column(String(40), nullable=False)
+    filepath = Column(String(2048), nullable=False)
+    change_type = Column(String(1), nullable=False)
+    add_lines = Column(Integer, nullable=False)
+    del_lines = Column(Integer, nullable=False)
+
 class FileCache(Base, Model):
     __tablename__ = 'file_cache'
     id = Column(Integer, primary_key=True)

@@ -7,6 +7,8 @@ from git_release_report.gitblamedb.core import load_data_by_repo_name
 from git_release_report.gitblamedb import models
 from git_release_report.gitblamedb.core import get_commit
 
+from git_release_report.gitblamedb.core import get_commit_stats
+
 @pytest.fixture
 def session():
     engine = create_sqlite_engine(':memory:')
@@ -34,3 +36,9 @@ def test_to_commit_model():
     commit = get_commit('tests/test_repo', '8f35cc4768393b25468416829e980d7550619fb1')
     res = commit.to_dict()
     assert res["sha"] == "8f35cc4768393b25468416829e980d7550619fb1"
+
+
+def test_diff_info():
+    diffs = get_commit_stats('tests/test_repo', '6f9e2ae3907')
+    assert len(diffs) == 5
+    assert diffs[0].filepath == 'ThirdPartyNotices.txt'
