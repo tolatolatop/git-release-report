@@ -48,7 +48,8 @@ class DiffInfo(Base, Model):
     __tablename__ = 'diff_info'
     id = Column(Integer, primary_key=True)
     repo_name = Column(String(255), nullable=False)
-    sha = Column(String(40), nullable=False)
+    old_sha = Column(String(40), nullable=False)
+    new_sha = Column(String(40), nullable=False)
     a_path = Column(String(2048), nullable=False)
     b_path = Column(String(2048), nullable=False)
     change_type = Column(String(1), nullable=False)

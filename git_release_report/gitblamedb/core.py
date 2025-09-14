@@ -163,7 +163,7 @@ def to_blame_line_model(repo_name: str, file_path: str, blame: Tuple[str, int]) 
         repo_name=repo_name,
         file_path=file_path,
         line_number=blame[1],
-        commit_sha=blame[0],
+        sha=blame[0],
     )
 
 
@@ -298,13 +298,14 @@ def get_commit_stats(repo_path: str, commit_id: str) -> List[CommitStatModel]:
     ]
 
 
-def to_diff_info_model(repo_name: str, rev_1: str, rev_2: str, diff: Diff) -> DiffInfoModel:
+def to_diff_info_model(repo_name: str, old_commit: str, new_commit: str, diff: Diff) -> DiffInfoModel:
     """
     将diff信息转换为diff模型
     """
     return DiffInfoModel(
         repo_name=repo_name,
-        commit_sha=rev_1,
+        old_sha=old_commit,
+        new_sha=new_commit,
         a_path=diff.a_path,
         b_path=diff.b_path,
         change_type=diff.change_type,
@@ -312,16 +313,16 @@ def to_diff_info_model(repo_name: str, rev_1: str, rev_2: str, diff: Diff) -> Di
 
 
 
-def get_diff_info(repo_path: str, rev_1: str, rev_2: str) -> List[DiffInfoModel]:
+def get_diff_info(repo_path: str, old_commit: str, new_commit: str) -> List[DiffInfoModel]:
     """
     获取diff信息
 
     Args:
         repo_path: 仓库路径
-        rev_1: 第一个提交
-        rev_2: 第二个提交
+        old_commit: 第一个提交
+        new_commit: 第二个提交
     """ 
     repo_name = os.path.basename(repo_path)
     repo = Repo(repo_path)
-    diff  = repo.commit(rev_1).diff(rev_2)
-    return [to_diff_info_model(repo_name, rev_1, rev_2, diff) for diff in diff]
+    diff  = repo.commit(old_commit).diff(new_commit)
+    return [to_diff_info_model(repo_name, old_commit, new_commit, diff) for diff in diff]

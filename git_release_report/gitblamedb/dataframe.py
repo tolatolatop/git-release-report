@@ -29,3 +29,18 @@ def list_commit_stats(repo_path: str, commit_id: str) -> pd.DataFrame:
         pd.DataFrame: commit统计信息数据框
     """
     return pd.DataFrame([commit_stat.to_dict() for commit_stat in core.get_commit_stats(repo_path, commit_id)])
+
+
+def list_diff_info(repo_path: str, old_commit: str, new_commit: str) -> pd.DataFrame:
+    """
+    列出仓库中的diff信息
+
+    Args:
+        repo_path: 仓库路径
+        old_commit: 第一个提交
+        new_commit: 第二个提交
+
+    Returns:
+        pd.DataFrame: diff信息数据框
+    """
+    return pd.DataFrame([diff_info.to_dict() for diff_info in core.get_diff_info(repo_path, old_commit, new_commit)])
