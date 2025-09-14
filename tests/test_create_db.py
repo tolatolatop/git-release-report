@@ -5,7 +5,7 @@ from git_release_report.gitblamedb.models import get_session
 from git_release_report.gitblamedb.core import create_blame_repo
 from git_release_report.gitblamedb.core import load_data_by_repo_name
 from git_release_report.gitblamedb import models
-
+from git_release_report.gitblamedb.core import get_commit
 
 @pytest.fixture
 def session():
@@ -28,3 +28,9 @@ def test_create_blame_repo(session):
     assert blame_lines[0].file_path == 'package.json'
     assert blame_lines[0].line_number == 1
     assert blame_lines[0].commit_sha == "8f35cc4768393b25468416829e980d7550619fb1"
+
+
+def test_to_commit_model():
+    commit = get_commit('tests/test_repo', '8f35cc4768393b25468416829e980d7550619fb1')
+    res = commit.to_dict()
+    assert res["sha"] == "8f35cc4768393b25468416829e980d7550619fb1"

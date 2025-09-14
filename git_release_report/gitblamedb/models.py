@@ -18,6 +18,11 @@ T = TypeVar('T')
 class Model:
     _unique_fields__ = []
 
+    def to_dict(self):
+        out = dict((key, value) for key, value in self.__dict__.items() if not key.startswith('_'))
+        if "id" not in out:
+            out["id"] = -1
+        return out
 
 class Commit(Base, Model):
     __tablename__ = 'commits'
@@ -37,7 +42,6 @@ class Commit(Base, Model):
     __table_args__ = (
         UniqueConstraint(*_unique_fields__, name='uq_commit_repo_sha'),
     )
-
 
 class FileCache(Base, Model):
     __tablename__ = 'file_cache'
