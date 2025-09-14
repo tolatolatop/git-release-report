@@ -144,6 +144,7 @@ def to_commit_model(repo_name: str, commit: Commit) -> CommitModel:
         author_email=commit.author.email,
         committer_name=commit.committer.name,
         committer_email=commit.committer.email,
+        is_merge=commit.parents != 1,
     )
 
 
