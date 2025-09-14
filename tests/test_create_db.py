@@ -29,7 +29,7 @@ def test_create_blame_repo(session):
     assert len(blame_lines) == 240
     assert blame_lines[0].file_path == 'package.json'
     assert blame_lines[0].line_number == 1
-    assert blame_lines[0].commit_sha == "8f35cc4768393b25468416829e980d7550619fb1"
+    assert blame_lines[0].sha == "8f35cc4768393b25468416829e980d7550619fb1"
 
 
 def test_to_commit_model():

@@ -48,7 +48,7 @@ class DiffInfo(Base, Model):
     __tablename__ = 'diff_info'
     id = Column(Integer, primary_key=True)
     repo_name = Column(String(255), nullable=False)
-    commit_sha = Column(String(40), nullable=False)
+    sha = Column(String(40), nullable=False)
     a_path = Column(String(2048), nullable=False)
     b_path = Column(String(2048), nullable=False)
     change_type = Column(String(1), nullable=False)
@@ -58,7 +58,7 @@ class CommitStat(Base, Model):
     __tablename__ = 'commit_stat'
     id = Column(Integer, primary_key=True)
     repo_name = Column(String(255), nullable=False)
-    commit_sha = Column(String(40), nullable=False)
+    sha = Column(String(40), nullable=False)
     filepath = Column(String(2048), nullable=False)
     change_type = Column(String(1), nullable=False)
     add_lines = Column(Integer, nullable=False)
@@ -85,7 +85,7 @@ class BlameLine(Base, Model):
     repo_name = Column(String(255), nullable=False)
     file_path = Column(String(2048), nullable=False)
     line_number = Column(Integer, nullable=False)
-    commit_sha = Column(String(40), nullable=False)
+    sha = Column(String(40), nullable=False)
 
     _unique_fields__ = ['repo_name', 'file_path', 'line_number']
 

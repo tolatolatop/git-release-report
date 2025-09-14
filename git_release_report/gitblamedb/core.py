@@ -230,7 +230,7 @@ def create_blame_repo(repo_path: str, regex: str, sess: Session):
 
     commit_id_set = set()
     for blame_line in blame_lines:
-        commit_id_set.add(blame_line.commit_sha)
+        commit_id_set.add(blame_line.sha)
 
     repo = Repo(repo_path)
     commits = [repo.commit(commit_id) for commit_id in commit_id_set]
@@ -274,7 +274,7 @@ def to_commit_stats_model(repo_name: str, commit_id: str, filepath: str, stat: d
     """
     return CommitStatModel(
         repo_name=repo_name,
-        commit_sha=commit_id,
+        sha=commit_id,
         filepath=filepath,
         change_type=stat['change_type'],
         add_lines=stat['insertions'],
