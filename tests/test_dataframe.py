@@ -27,12 +27,24 @@ def test_list_commits(repo_path, old_commit, new_commit):
     # list中会包含merge的子commit
     commit_id = "1fcf686def190"
     assert commit_df['sha'].str.contains(commit_id).values.sum() > 0
+    filter = commit_df['sha'].str.contains(commit_id)
+    assert commit_df[filter].iloc[0]['is_merge'] == True
 
 
 def test_list_commit_stats(repo_path, old_commit, new_commit):
     commit_stats_df = ndfb.list_commit_stats(repo_path, new_commit)
     assert len(commit_stats_df) == 5
     assert commit_stats_df['sha'].iloc[0] == 'f83a4f2a4d8c485922fba3018a64fc8f4cfd315f'
+    assert commit_stats_df['filepath'].iloc[0] == 'fs/erofs/erofs_fs.h'
+    assert commit_stats_df['change_type'].iloc[0] == 'M'
+    assert commit_stats_df['add_lines'].iloc[0] == 5
+    assert commit_stats_df['del_lines'].iloc[0] == 3
+
+    # 子commit会有重复计数的可能
+    commit_id = "1fcf686def190"
+    commit_stats_df = ndfb.list_commit_stats(repo_path, commit_id)
+    assert len(commit_stats_df) == 3
+    assert commit_stats_df['sha'].iloc[0] == '1fcf686def19064a7b5cfaeb28c1f1a119900a2b'
     assert commit_stats_df['filepath'].iloc[0] == 'fs/erofs/erofs_fs.h'
     assert commit_stats_df['change_type'].iloc[0] == 'M'
     assert commit_stats_df['add_lines'].iloc[0] == 5
